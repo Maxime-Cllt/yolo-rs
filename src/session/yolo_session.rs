@@ -50,11 +50,14 @@ impl YoloSession {
         &mut self,
         input_tensor: Array4<f32>,
     ) -> Result<Vec<BoundingBox>, SessionError> {
+
+        // Run inference using ONNX Runtime session
         let outputs: SessionOutputs = self
             .session
             .run_inference(&input_tensor)
             .map_err(|e| SessionError::Inference(e.to_string()))?;
 
+        // Extract output tensor and shape
         let (shape, data) = outputs["output0"]
             .try_extract_tensor::<f32>()
             .map_err(|e| SessionError::Inference(format!("Failed to extract tensor: {e}")))?;
