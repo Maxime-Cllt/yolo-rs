@@ -1,15 +1,15 @@
-use crate::detection::BoundingBox;
+use crate::config::yolo_config::YoloConfig;
 use crate::detection::nms::{nms, nms_per_class};
 use crate::detection::output::OutputFormat;
 use crate::detection::visualization::draw_boxes;
+use crate::detection::BoundingBox;
 use crate::image::image_util::load_image_u8_default;
 use crate::image::image_util::normalize_image_f32;
 use crate::image::loaded_image::LoadedImageU8;
-use crate::model::inference::{YoloInference, create_inference};
-use crate::model::yolo_type::YoloType;
-use crate::session::SessionError;
+use crate::model::inference::{create_inference, YoloInference};
 use crate::session::ort_inference_session::OrtInferenceSession;
 use crate::session::session_config::SessionConfig;
+use crate::session::SessionError;
 use image::{DynamicImage, RgbImage};
 use ndarray::Array4;
 use ort::session::SessionOutputs;
@@ -25,41 +25,18 @@ pub struct YoloSession {
 
 impl YoloSession {
     /// Creates a new YOLO session with default configuration
-    pub fn new(model_path: &str, model_type: YoloType) -> Result<Self, SessionError> {
-        Self::with_config(model_path, &model_type, SessionConfig::default())
+    pub fn new(yolo_config: YoloConfig) -> Result<Self, SessionError> {
+        Self::with_config(yolo_config, SessionConfig::default())
     }
 
     /// Creates a new YOLO session with custom configuration
     pub fn with_config(
-        model_path: &str,
-        model_type: &YoloType,
+        yolo_config: YoloConfig,
         config: SessionConfig,
     ) -> Result<Self, SessionError> {
-        let session = OrtInferenceSession::new(Path::new(model_path))
+        let session = OrtInferenceSession::new(Path::new(&yolo_config.model.path))
             .map_err(|e| SessionError::Io(std::io::Error::other(e)))?;
-        let inference = create_inference(&model_type);
-
-        Ok(Self {
-            session,
-            config,
-            inference,
-        })
-    }
-
-    /// Creates a new YOLO session with default configuration from model bytes
-    pub fn from_bytes(model_bytes: &[u8], model_type: YoloType) -> Result<Self, SessionError> {
-        Self::from_bytes_with_config(model_bytes, &model_type, SessionConfig::default())
-    }
-
-    /// Creates a new YOLO session with custom configuration from model bytes
-    pub fn from_bytes_with_config(
-        model_bytes: &[u8],
-        model_type: &YoloType,
-        config: SessionConfig,
-    ) -> Result<Self, SessionError> {
-        let session = OrtInferenceSession::from_bytes(model_bytes)
-            .map_err(|e| SessionError::Io(std::io::Error::other(e)))?;
-        let inference = create_inference(&model_type);
+        let inference = create_inference(&yolo_config.model.architecture);
 
         Ok(Self {
             session,
