@@ -1,4 +1,3 @@
-use crate::class::clash_class::ClashClass;
 use crate::image::image_config::ImageConfig;
 use crate::image::image_size::ImageSize;
 use crate::image::loaded_image::{LoadedImageF32, LoadedImageU8};
@@ -8,6 +7,7 @@ use ndarray::{Array4, s};
 use raqote::SolidSource;
 use std::collections::HashMap;
 use std::path::Path;
+use crate::config::class::Class;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ImageLoadError {
@@ -126,11 +126,11 @@ pub fn normalize_image_f32(
 /// Generates distinct colors for each class using a more sophisticated color scheme
 #[must_use]
 pub fn generate_class_colors() -> HashMap<usize, SolidSource> {
-    let num_classes = ClashClass::num_classes();
+    let num_classes = Class::num_classes();
     let mut class_colors = HashMap::with_capacity(num_classes);
 
     // Use predefined colors if available
-    let predefined_colors = ClashClass::colors();
+    let predefined_colors = Class::colors();
 
     for (i, &color) in predefined_colors.iter().enumerate() {
         let (r, g, b, a) = color;

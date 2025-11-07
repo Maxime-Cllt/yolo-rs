@@ -2,7 +2,7 @@
 name = "yolo-rs"
 version = "0.1.0"
 license = "GPL-3.0"
-repository = "https://github.com/Maxime-Cllt/ClashVisionRuntime.git"
+repository = "https://github.com/Maxime-Cllt/yolo-rs.git"
 categories = ["accessibility", "command-line-interface"]
 keywords = ["machine-learning", "ai", "computer-vision", "image-processing", "onnx"]
 authors = ["Maxime-Cllt"]

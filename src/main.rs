@@ -1,10 +1,9 @@
-use clashvision::model::yolo_type::YoloType;
-use clashvision::session::yolo_session::YoloSession;
+use yolors::model::yolo_type::YoloType;
+use yolors::session::yolo_session::YoloSession;
 
 #[cfg(test)]
 mod benches;
 
-// Embed the model at compile time
 const MODEL_BYTES: &[u8] = include_bytes!("../models/best.onnx");
 
 fn main() {

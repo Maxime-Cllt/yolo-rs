@@ -1,6 +1,6 @@
-use clashvision::model::yolo_type::YoloType;
-use clashvision::session::yolo_session::YoloSession;
 use criterion::{Criterion, criterion_group, criterion_main};
+use yolors::model::yolo_type::YoloType;
+use yolors::session::yolo_session::YoloSession;
 
 #[allow(dead_code)]
 fn bench_process_image() {
