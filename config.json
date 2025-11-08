@@ -1,23 +1,18 @@
 {
   "model": {
-    "path": "/Users/maximecolliat/RustroverProjects/Yolo-rs/models/best.onnx",
+    "path": "models/best.onnx",
     "architecture": 8
   },
   "class": [
     {
       "id": 0,
-      "name": "Car",
-      "color": "#FF0000"
+      "name": "Elexir",
+      "color": "#0000ff"
     },
     {
       "id": 1,
-      "name": "Truck",
+      "name": "Gold",
       "color": "#00FF00"
-    },
-    {
-      "id": 2,
-      "name": "Motorcycle",
-      "color": "#0000FF"
     }
   ]
 }

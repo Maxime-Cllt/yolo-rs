@@ -1,4 +1,5 @@
-use yolors::config::yolo_config::YoloConfig;
+use once_cell::sync::Lazy;
+use yolors::config::yolo_config::{YoloConfig, YOLO_CONFIG};
 use yolors::session::yolo_session::YoloSession;
 
 #[cfg(test)]
@@ -19,7 +20,7 @@ fn main() {
 
     // Use the embedded model bytes instead of a file path
     let mut yolo_model =
-        YoloSession::new(YoloConfig::with_conf()).expect("Failed to create YOLO model");
+        YoloSession::new(YOLO_CONFIG.clone()).expect("Failed to create YOLO model");
 
     yolo_model
         .process_image(&image_path)

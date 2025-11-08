@@ -2,11 +2,11 @@ use serde::Deserialize;
 
 /// This file is part of a Clash of Clans related project.
 /// This file is part of a Clash of Clans related project.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Class {
-    pub id: u8,
-    pub name: String,
-    pub color: Option<String>,
+    pub id: u8,                // Unique identifier for the class
+    pub name: String,          // Name of the class, e.g., "person", "car"
+    pub color: Option<String>, // Color in HEX format, e.g., "#FF5733"
 }
 
 impl Class {

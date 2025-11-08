@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use crate::model::yolo_type::YoloType;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct ModelConfig {
     pub path: String,
     pub architecture: YoloType,
