@@ -1,0 +1,51 @@
+name: Rust CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE*'
+      - '.gitignore'
+      - '.github/dependabot.yml'
+      - 'images/**'
+  pull_request:
+    branches: [ "main" ]
+    paths-ignore:
+      - '**.md'
+      - 'LICENSE*'
+      - '.gitignore'
+      - '.github/dependabot.yml'
+      - 'assets/**'
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  check:
+    name: Check
+    runs-on: macos-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          # Cache key based on Cargo.lock and source files
+          key: ${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/*.rs') }}
+
+      - name: Run cargo
+        run: cargo build
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Run check
+        run: cargo check --release

@@ -1,0 +1,394 @@
+name: "Build & Release Workflow"
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches : ["main", "master"]
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        description: "Version (e.g., v2024.12.25)"
+        required: false
+      publish:
+        type: boolean
+        description: "Publish release"
+        default: true
+      overwrite_tag:
+        type: boolean
+        description: "Overwrite tag if it exists"
+        default: false
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        description: "Version (e.g., v2024.12.25)"
+        required: false
+      publish:
+        type: boolean
+        default: true
+      overwrite_tag:
+        type: boolean
+        default: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  validate-input:
+    runs-on: ubuntu-latest
+    outputs:
+      is_valid: ${{ steps.validate.outputs.is_valid }}
+    steps:
+      - name: Validate version format
+        id: validate
+        run: |
+          if [[ "${{ github.event.inputs.version }}" =~ ^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}(-[0-9]+)?$ ]] || [[ "${{ github.event_name }}" == "push" ]] || [[ -z "${{ github.event.inputs.version }}" ]]; then
+            echo "is_valid=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_valid=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Invalid version format. Expected: vYYYY.MM.DD or vYYYY.MM.DD-N"
+            exit 1
+          fi
+
+  determine-version:
+    needs: validate-input
+    runs-on: ubuntu-latest
+    outputs:
+      tag_version: ${{ steps.version.outputs.tag_version }}
+      crate_version: ${{ steps.version.outputs.crate_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            # Auto-generate version for push events
+            current_date=$(date +"%Y.%m.%d")
+            base_tag="v${current_date}"
+          
+            # Find existing tags for today and determine next increment
+            existing_tags=$(git tag -l "${base_tag}*" | sort -V)
+          
+            if [[ -z "$existing_tags" ]]; then
+              new_tag="$base_tag"
+            else
+              # Extract highest increment
+              highest_increment=$(echo "$existing_tags" | sed "s/${base_tag}//" | sed 's/^-//' | grep -E '^[0-9]*$' | sort -n | tail -n1)
+              if [[ -z "$highest_increment" || "$highest_increment" == "" ]]; then
+                new_increment=1
+              else
+                new_increment=$((highest_increment + 1))
+              fi
+              new_tag="${base_tag}-${new_increment}"
+            fi
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            # Use provided version
+            new_tag="${{ inputs.version }}"
+          else
+            # Generate date-based version for manual dispatch without version
+            current_date=$(date +"%Y.%m.%d")
+            new_tag="v${current_date}"
+          fi
+          
+          crate_version=$(echo "$new_tag" | sed 's/^v//')
+          
+          echo "tag_version=$new_tag" >> "$GITHUB_OUTPUT"
+          echo "crate_version=$crate_version" >> "$GITHUB_OUTPUT"
+          
+          echo "::notice::Generated version: $new_tag (crate: $crate_version)"
+
+      - name: Update Cargo.toml version
+        if: github.event_name != 'push'
+        run: |
+          version="${{ steps.version.outputs.crate_version }}"
+          sed -i "s/^version = \".*\"/version = \"$version\"/" Cargo.toml
+          echo "::notice::Updated Cargo.toml version to: $version"
+
+  create-tag:
+    needs: [validate-input, determine-version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Handle existing tag
+        run: |
+          tag="${{ needs.determine-version.outputs.tag_version }}"
+          
+          if git rev-parse --verify "refs/tags/$tag" >/dev/null 2>&1; then
+            if [[ "${{ inputs.overwrite_tag }}" == "true" ]]; then
+              echo "::warning::Overwriting existing tag: $tag"
+              git tag -d "$tag"
+              git push origin ":refs/tags/$tag" || true
+            else
+              echo "::error::Tag $tag already exists. Use overwrite_tag option to replace it."
+              exit 1
+            fi
+          fi
+
+      - name: Create and push tag
+        run: |
+          tag="${{ needs.determine-version.outputs.tag_version }}"
+          git tag "$tag"
+          git push origin "$tag"
+          echo "::notice::Created and pushed tag: $tag"
+
+  build:
+    needs: [determine-version, create-tag]
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true  # Allow other builds to continue if one fails
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc }
+          - { os: windows-latest, target: aarch64-pc-windows-msvc }
+          - { os: macos-latest, target: x86_64-apple-darwin }
+          - { os: macos-latest, target: aarch64-apple-darwin }
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.determine-version.outputs.tag_version }}
+
+      - name: Install system dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libssl-dev \
+            pkg-config \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxkbcommon-dev \
+            libgtk-3-dev \
+            libasound2-dev \
+            cmake \
+            build-essential
+
+      - name: Install ONNX Runtime (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          # Set ONNX Runtime version (update as needed)
+          $ONNX_VERSION = "1.23.1"
+          
+          # Determine architecture
+          if ("${{ matrix.target }}" -eq "x86_64-pc-windows-msvc") {
+            $ARCH = "x64"
+          } elseif ("${{ matrix.target }}" -eq "aarch64-pc-windows-msvc") {
+            $ARCH = "arm64"
+          } else {
+            $ARCH = "x64"  # fallback
+          }
+          
+          # Download ONNX Runtime
+          $URL = "https://github.com/microsoft/onnxruntime/releases/download/v$ONNX_VERSION/onnxruntime-win-$ARCH-$ONNX_VERSION.zip"
+          $ZIP_PATH = "onnxruntime.zip"
+          $EXTRACT_PATH = "C:\onnxruntime"
+          
+          Write-Host "::notice::Downloading ONNX Runtime $ONNX_VERSION for $ARCH"
+          Invoke-WebRequest -Uri $URL -OutFile $ZIP_PATH
+          
+          # Extract archive
+          Expand-Archive -Path $ZIP_PATH -DestinationPath $EXTRACT_PATH -Force
+          
+          # Find the extracted directory (it has version in name)
+          $ONNX_DIR = Get-ChildItem -Path $EXTRACT_PATH -Directory | Select-Object -First 1
+          $ONNX_FULL_PATH = $ONNX_DIR.FullName
+          
+          Write-Host "::notice::ONNX Runtime extracted to: $ONNX_FULL_PATH"
+          
+          # Set environment variables for this job
+          echo "ORT_LIB_LOCATION=$ONNX_FULL_PATH\lib" >> $env:GITHUB_ENV
+          echo "ORT_DYLIB_PATH=$ONNX_FULL_PATH\lib" >> $env:GITHUB_ENV
+          echo "$ONNX_FULL_PATH\lib" >> $env:GITHUB_PATH
+          
+          # Also add to Windows PATH for DLL discovery
+          $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Process")
+          [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$ONNX_FULL_PATH\lib", "Process")
+          
+          # Verify installation
+          Write-Host "::notice::ONNX Runtime files:"
+          Get-ChildItem -Path "$ONNX_FULL_PATH\lib" -Name "*.dll" | ForEach-Object { Write-Host "  $_" }
+
+      - name: Install system dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install pkg-config
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build binary
+        run: |
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Bundle Windows DLLs
+        if: matrix.os == 'windows-latest'
+        shell: powershell
+        run: |
+          $target = "${{ matrix.target }}"
+          $binaryPath = "target\$target\release\yolo-rs.exe"
+          $bundleDir = "yolo-rs-$target-bundle"
+          
+          # Create bundle directory
+          New-Item -ItemType Directory -Path $bundleDir -Force
+          
+          # Copy main executable
+          Copy-Item $binaryPath "$bundleDir\yolo-rs.exe"
+          
+          # Copy ONNX Runtime DLLs if they exist
+          if (Test-Path $env:ORT_DYLIB_PATH) {
+            Write-Host "::notice::Bundling ONNX Runtime DLLs"
+            Get-ChildItem -Path $env:ORT_DYLIB_PATH -Name "*.dll" | ForEach-Object {
+              Copy-Item "$env:ORT_DYLIB_PATH\$_" "$bundleDir\"
+              Write-Host "  Bundled: $_"
+            }
+          }
+          
+          # Create a simple batch file to run the executable
+          @"
+          @echo off
+          cd /d "%~dp0"
+          yolo-rs.exe %*
+          "@ | Out-File -FilePath "$bundleDir\run.bat" -Encoding ascii
+          
+          # Create ZIP archive
+          Compress-Archive -Path "$bundleDir\*" -DestinationPath "yolo-rs-$target.zip" -Force
+          
+          echo "BUNDLE_PATH=yolo-rs-$target.zip" >> $env:GITHUB_ENV
+
+      - name: Prepare binary for upload
+        shell: bash
+        run: |
+          target="${{ matrix.target }}"
+          
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            # For Windows, we use the bundled ZIP
+            artifact_name="yolo-rs-${target}.zip"
+            echo "ARTIFACT_NAME=${artifact_name}" >> $GITHUB_ENV
+            echo "ARTIFACT_PATH=${artifact_name}" >> $GITHUB_ENV
+          else
+            # For Unix systems, use the binary directly
+            binary_name="yolo-rs"
+            artifact_name="yolo-rs-${target}"
+          
+            cp "target/${target}/release/${binary_name}" "${artifact_name}"
+          
+            echo "ARTIFACT_NAME=${artifact_name}" >> $GITHUB_ENV
+            echo "ARTIFACT_PATH=${artifact_name}" >> $GITHUB_ENV
+          fi
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_PATH }}
+          if-no-files-found: error
+          retention-days: 1
+
+  create-release:
+    needs: [determine-version, build]
+    runs-on: ubuntu-latest
+    if: always() && needs.determine-version.result == 'success'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -type f -exec cp {} release-assets/ \;
+          ls -la release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.determine-version.outputs.tag_version }}
+          name: Release ${{ needs.determine-version.outputs.tag_version }}
+          draft: false
+          prerelease: false
+          files: release-assets/*
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+          body: |
+            ## Installation Notes
+            
+            ### Windows
+            - Download the `.zip` file for your architecture (x64 or ARM64)
+            - Extract the archive to your desired location
+            - Run `yolo-rs.exe` or use the provided `run.bat` script
+            - All required DLLs are bundled in the archive
+            
+            ### Linux/macOS
+            - Download the binary for your platform
+            - Make it executable: `chmod +x yolo-rs-<target>`
+            - Run directly: `./yolo-rs-<target>`
+
+  summary:
+    needs: [determine-version, build, create-release]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Build summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.determine-version.outputs.tag_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Crate Version:** ${{ needs.determine-version.outputs.crate_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Results:" >> $GITHUB_STEP_SUMMARY
+          
+          # This will show the status of each build job
+          echo "| Target | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.build.result }}" == "success" ]]; then
+            echo "| All targets | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Some targets | ⚠️ Partial success (check individual job results) |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.create-release.result }}" == "success" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "🎉 **Release created successfully!**" >> $GITHUB_STEP_SUMMARY
+            echo "[View Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.determine-version.outputs.tag_version }})" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Package Notes:" >> $GITHUB_STEP_SUMMARY
+            echo "- **Windows**: Bundled with ONNX Runtime DLLs in ZIP archives" >> $GITHUB_STEP_SUMMARY
+            echo "- **Linux/macOS**: Standalone binaries" >> $GITHUB_STEP_SUMMARY
+          fi

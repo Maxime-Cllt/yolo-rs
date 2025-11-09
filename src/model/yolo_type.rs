@@ -1,4 +1,5 @@
-use std::fmt::Debug;
+use serde::{Deserialize, Deserializer};
+use std::fmt::{Debug, Display};
 
 /// Enum representing different types of YOLO models.
 #[derive(PartialEq, Eq, Clone)]
@@ -28,6 +29,35 @@ impl TryFrom<&str> for YoloType {
             "yolov10" => Ok(Self::YoloV10),
             _ => Err(()),
         }
+    }
+}
+
+impl TryFrom<u8> for YoloType {
+    type Error = ();
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            8 => Ok(Self::YoloV8),
+            10 => Ok(Self::YoloV10),
+            _ => Err(()),
+        }
+    }
+}
+
+impl Display for YoloType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+// Custom deserializer implementation
+impl<'de> Deserialize<'de> for YoloType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = u8::deserialize(deserializer)?;
+        Self::try_from(value).map_err(|_| serde::de::Error::custom("Invalid YoloType value"))
     }
 }
 

@@ -31,7 +31,10 @@ impl OrtInferenceSession {
         input_image: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
     ) -> ort::Result<SessionOutputs<'_>> {
         let shape: Vec<usize> = input_image.shape().to_vec();
-        let raw_data: Vec<f32> = input_image.as_slice().unwrap().to_vec();
+        let raw_data: Vec<f32> = input_image.as_slice().map_or_else(
+            || Vec::new(),
+            |slice| slice.to_vec(),
+        );
         let input_tensor: Tensor<f32> = Tensor::from_array((shape, raw_data.into_boxed_slice()))?;
 
         let input_value: SessionInputValue = SessionInputValue::Owned(Value::from(input_tensor));

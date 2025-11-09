@@ -1,10 +1,10 @@
-use crate::class::clash_class::ClashClass;
+use crate::config::yolo_config::YOLO_CONFIG;
 use crate::image::image_config::ImageConfig;
 use crate::image::image_size::ImageSize;
 use crate::image::loaded_image::{LoadedImageF32, LoadedImageU8};
 use crate::image::{DEFAULT_MEAN, DEFAULT_STD};
 use image::{ImageBuffer, ImageError, Pixel, Rgb};
-use ndarray::{Array4, s};
+use ndarray::{s, Array4};
 use raqote::SolidSource;
 use std::collections::HashMap;
 use std::path::Path;
@@ -88,6 +88,7 @@ fn resize_and_pad_image(
 }
 
 /// Converts `ImageBuffer` to ndarray with NCHW format
+#[inline]
 fn image_to_array(image: &ImageBuffer<Rgb<u8>, Vec<u8>>, size: ImageSize) -> Array4<u8> {
     Array4::from_shape_fn(
         (1, 3, size.height as usize, size.width as usize),
@@ -126,15 +127,17 @@ pub fn normalize_image_f32(
 /// Generates distinct colors for each class using a more sophisticated color scheme
 #[must_use]
 pub fn generate_class_colors() -> HashMap<usize, SolidSource> {
-    let num_classes = ClashClass::num_classes();
+    let num_classes = YOLO_CONFIG.classes.len();
     let mut class_colors = HashMap::with_capacity(num_classes);
 
     // Use predefined colors if available
-    let predefined_colors = ClashClass::colors();
+    let predefined_colors: Vec<(u8, u8, u8, u8)> = YOLO_CONFIG.colors();
 
     for (i, &color) in predefined_colors.iter().enumerate() {
         let (r, g, b, a) = color;
-        class_colors.insert(i, SolidSource { r, g, b, a });
+
+        // Swap red and blue channels to convert from RGB to BGR format
+        class_colors.insert(i, SolidSource { r: b, g, b: r, a });
     }
 
     class_colors

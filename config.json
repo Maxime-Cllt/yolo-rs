@@ -1,0 +1,18 @@
+{
+  "model": {
+    "path": "models/best.onnx",
+    "architecture": 8
+  },
+  "class": [
+    {
+      "id": 0,
+      "name": "Elexir",
+      "color": "#0000ff"
+    },
+    {
+      "id": 1,
+      "name": "Gold",
+      "color": "#00FF00"
+    }
+  ]
+}
