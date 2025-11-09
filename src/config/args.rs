@@ -7,8 +7,7 @@ pub fn parse_args(args: &[String]) -> Mode {
         if let Some(folder) = args.get(pos + 1) {
             Mode::Folder(folder.clone())
         } else {
-            eprintln!("Error: --folder flag requires a folder path");
-            std::process::exit(1);
+            panic!("Failed to find `--folder`");
         }
     } else {
         Mode::Default(args.get(1).cloned().unwrap_or_default())
