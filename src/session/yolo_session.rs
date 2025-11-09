@@ -50,7 +50,6 @@ impl YoloSession {
         &mut self,
         input_tensor: Array4<f32>,
     ) -> Result<Vec<BoundingBox>, SessionError> {
-
         // Run inference using ONNX Runtime session
         let outputs: SessionOutputs = self
             .session

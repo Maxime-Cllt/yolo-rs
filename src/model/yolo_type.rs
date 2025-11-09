@@ -52,7 +52,6 @@ impl Display for YoloType {
 
 // Custom deserializer implementation
 impl<'de> Deserialize<'de> for YoloType {
-
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,

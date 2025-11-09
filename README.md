@@ -14,7 +14,9 @@
 
 ## 📖 Overview
 
-**YOLO-rs** is a high-performance Rust runtime designed to execute YOLO models for object detection tasks. Built with speed and reliability in mind, it leverages ONNX Runtime to provide efficient inference on images, making it ideal for real-time computer vision applications, game analytics, and automated image processing pipelines.
+**YOLO-rs** is a high-performance Rust runtime designed to execute YOLO models for object detection tasks. Built with
+speed and reliability in mind, it leverages ONNX Runtime to provide efficient inference on images, making it ideal for
+real-time computer vision applications, game analytics, and automated image processing pipelines.
 
 ### 🎯 Why YOLO-rs?
 
@@ -29,15 +31,15 @@
 
 ## ✨ Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **🤖 YOLOv8 Support** | Full support for YOLOv8 models in ONNX format |
-| **🖼️ Image Processing** | Handles multiple image formats (PNG, JPG, etc.) |
-| **🎯 Object Detection** | Accurate bounding box detection with confidence scores |
-| **📊 Multiple Output Formats** | Export results as JSON or YOLO annotation format |
-| **🎨 Visual Annotations** | Generate annotated images with colored bounding boxes |
-| **⚙️ Configurable** | JSON-based configuration for models and classes |
-| **🧪 Well-Tested** | Comprehensive unit tests and benchmarks included |
+| Feature                        | Description                                            |
+|--------------------------------|--------------------------------------------------------|
+| **🤖 YOLOv8 Support**          | Full support for YOLOv8 models in ONNX format          |
+| **🖼️ Image Processing**       | Handles multiple image formats (PNG, JPG, etc.)        |
+| **🎯 Object Detection**        | Accurate bounding box detection with confidence scores |
+| **📊 Multiple Output Formats** | Export results as JSON or YOLO annotation format       |
+| **🎨 Visual Annotations**      | Generate annotated images with colored bounding boxes  |
+| **⚙️ Configurable**            | JSON-based configuration for models and classes        |
+| **🧪 Well-Tested**             | Comprehensive unit tests and benchmarks included       |
 
 ---
 
@@ -95,48 +97,23 @@ Create a `config.json` file in your project root:
 ```json
 {
   "model": {
-    "path": "models/yolov8n.onnx",
-    "input_size": 640,
-    "confidence_threshold": 0.5,
-    "iou_threshold": 0.45
+    "path": "model.onnx",
+    "architecture": 8
   },
   "class": [
-    {"id": 0, "name": "person"},
-    {"id": 1, "name": "bicycle"},
-    {"id": 2, "name": "car"}
+    {
+      "id": 0,
+      "name": "Cat",
+      "color": "#FF0000"
+    },
+    {
+      "id": 1,
+      "name": "Dog",
+      "color": "#00FF00"
+    }
   ]
 }
 ```
-
-### As a Library
-
-Add `yolo-rs` to your `Cargo.toml`:
-
-```toml
-[dependencies]
-yolors = { path = "path/to/yolo-rs" }
-```
-
-Use it in your code:
-
-```rust
-use yolors::{YoloConfig, YoloModel};
-
-fn main() {
-    // Load configuration
-    let config = YoloConfig::with_conf();
-    
-    // Initialize model
-    let model = YoloModel::new(&config).expect("Failed to load model");
-    
-    // Run inference
-    let detections = model.detect("image.png").expect("Inference failed");
-    
-    println!("Found {} objects", detections.len());
-}
-```
-
----
 
 ## 📊 Output Formats
 
@@ -173,94 +150,36 @@ fn main() {
 0 0.668 0.454 0.040 0.039 0.9588
 ```
 
-Format: `class_id center_x center_y width height confidence`
-
 ---
 
-## 🧪 Testing & Benchmarking
+## 🧪 Code quality
 
-### Run Unit Tests
+### Unit Tests available
+
+The `tests` directory is tested using the command :
 
 ```bash
 cargo test
 ```
 
-### Run Benchmarks
+### Benchmarking available
+
+Code is benchmarked using the `criterion` crate. To run benchmarks, use:
 
 ```bash
 cargo bench
 ```
 
-Benchmarks use the [Criterion](https://github.com/bheisler/criterion.rs) framework for accurate performance measurements.
-
----
-
-## 🏗️ Project Structure
-
-```
-yolo-rs/
-├── src/
-│   ├── lib.rs              # Library entry point
-│   ├── main.rs             # CLI application
-│   ├── model/              # YOLO model implementation
-│   ├── config/             # Configuration handling
-│   ├── utils/              # Utility functions
-│   └── benches/            # Benchmark suite
-├── models/                 # ONNX model files
-├── tests/                  # Integration tests
-├── config.json             # Configuration file
-├── Cargo.toml              # Project manifest
-└── README.md
-```
-
----
-
-## ⚙️ Performance
-
-YOLO-rs is optimized for performance with:
-
-- **LTO (Link Time Optimization)**: Enabled in release builds
-- **Code Generation Units**: Optimized for maximum performance
-- **Profile-Guided Optimization**: Multiple build profiles for different use cases
-- **Memory Efficiency**: Zero-copy operations where possible
-
-### Build Profiles
-
-| Profile | Use Case | Optimization |
-|---------|----------|--------------|
-| `dev` | Development | Fast compilation, debugging |
-| `test` | Unit testing | Balanced speed and compile time |
-| `release` | Production | Maximum performance |
-| `bench` | Benchmarking | Performance testing |
-
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Here's how you can help:
-
-1. **Fork** the repository
-2. **Create** a feature branch
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Commit** your changes
-   ```bash
-   git commit -m 'Add amazing feature'
-   ```
-4. **Push** to your branch
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-5. **Open** a Pull Request
-
-### Development Guidelines
-
-- Write tests for new features
-- Run `cargo fmt` before committing
-- Run `cargo clippy` to catch common mistakes
-- Update documentation as needed
-
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+6. 
 ---
 
 ## 📝 License

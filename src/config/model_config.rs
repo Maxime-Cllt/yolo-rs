@@ -1,5 +1,5 @@
-use serde::Deserialize;
 use crate::model::yolo_type::YoloType;
+use serde::Deserialize;
 
 #[derive(Deserialize, Clone)]
 pub struct ModelConfig {
