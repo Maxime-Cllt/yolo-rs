@@ -26,12 +26,12 @@ pub struct YoloSession {
 impl YoloSession {
     /// Creates a new YOLO session with default configuration
     pub fn new(yolo_config: YoloConfig) -> Result<Self, SessionError> {
-        Self::with_config(yolo_config, SessionConfig::default())
+        Self::with_config(&yolo_config, SessionConfig::default())
     }
 
     /// Creates a new YOLO session with custom configuration
     pub fn with_config(
-        yolo_config: YoloConfig,
+        yolo_config: &YoloConfig,
         config: SessionConfig,
     ) -> Result<Self, SessionError> {
         let session = OrtInferenceSession::new(Path::new(&yolo_config.model.path))
@@ -48,7 +48,7 @@ impl YoloSession {
     /// Runs inference on the preprocessed input tensor
     pub fn run_inference(
         &mut self,
-        input_tensor: Array4<f32>,
+        input_tensor: &Array4<f32>,
     ) -> Result<Vec<BoundingBox>, SessionError> {
         // Run inference using ONNX Runtime session
         let outputs: SessionOutputs = self
@@ -167,7 +167,7 @@ impl YoloSession {
         let (original_image, loaded_image) = self.load_and_preprocess_image(image_path)?;
 
         let normalized_image = normalize_image_f32(&loaded_image, None, None);
-        let mut inferred_boxes = self.run_inference(normalized_image.image_array)?;
+        let mut inferred_boxes = self.run_inference(&normalized_image.image_array)?;
 
         // Apply NMS if enabled
         if self.config.use_nms {

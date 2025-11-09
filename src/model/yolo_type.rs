@@ -57,7 +57,7 @@ impl<'de> Deserialize<'de> for YoloType {
         D: Deserializer<'de>,
     {
         let value = u8::deserialize(deserializer)?;
-        YoloType::try_from(value).map_err(|_| serde::de::Error::custom("Invalid YoloType value"))
+        Self::try_from(value).map_err(|_| serde::de::Error::custom("Invalid YoloType value"))
     }
 }
 

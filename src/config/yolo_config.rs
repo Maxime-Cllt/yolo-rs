@@ -1,11 +1,10 @@
 use crate::config::class::Class;
 use crate::config::model_config::ModelConfig;
-use once_cell::sync::Lazy;
 use serde::Deserialize;
 use std::fs;
 
 // Load YOLO configuration lazily at runtime
-pub static YOLO_CONFIG: Lazy<YoloConfig> = Lazy::new(|| YoloConfig::with_conf());
+pub static YOLO_CONFIG: std::sync::LazyLock<YoloConfig> = std::sync::LazyLock::new(|| YoloConfig::with_conf());
 
 /// Configuration for YOLO model and classes.
 #[derive(Deserialize, Clone)]
@@ -22,7 +21,7 @@ impl YoloConfig {
     #[inline]
     pub fn with_conf() -> Self {
         let data = fs::read_to_string("config.json").expect("Unable to read file");
-        let yolo_conf: YoloConfig =
+        let yolo_conf: Self =
             serde_json::from_str(&data).expect("JSON was not well-formatted");
         yolo_conf
     }
@@ -34,6 +33,9 @@ impl YoloConfig {
         self.classes.len()
     }
 
+    /// Returns a vector of RGBA colors for each class.
+    #[inline]
+    #[must_use]
     pub fn colors(&self) -> Vec<(u8, u8, u8, u8)> {
         self.classes
             .iter()

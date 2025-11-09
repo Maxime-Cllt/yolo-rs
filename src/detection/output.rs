@@ -7,7 +7,7 @@ use std::io::{self};
 use std::path::Path;
 
 /// Output format options
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum OutputFormat {
     #[default]
     Yolo,
@@ -165,14 +165,7 @@ mod tests {
     #[test]
     fn test_yolo_output_single_box() -> io::Result<()> {
         let temp_file = NamedTempFile::new()?;
-        let boxes = vec![BoundingBox::new(
-            10.0,
-            20.0,
-            50.0,
-            80.0,
-            1,
-            1.0,
-        )];
+        let boxes = vec![BoundingBox::new(10.0, 20.0, 50.0, 80.0, 1, 1.0)];
 
         OutputFormat::output_to_yolo_txt_normalized(
             &boxes,
@@ -190,14 +183,7 @@ mod tests {
     #[test]
     fn test_yolo_output_json() -> io::Result<()> {
         let temp_file = NamedTempFile::new()?;
-        let boxes = vec![BoundingBox::new(
-            10.0,
-            20.0,
-            50.0,
-            80.0,
-            0,
-            1.0,
-        )];
+        let boxes = vec![BoundingBox::new(10.0, 20.0, 50.0, 80.0, 0, 1.0)];
 
         OutputFormat::output_to_coco_json(&boxes, (100, 100), temp_file.path())?;
 
@@ -205,10 +191,7 @@ mod tests {
         let json: serde_json::Value = serde_json::from_str(&content)?;
         assert_eq!(json["images"][0]["width"], 100);
         assert_eq!(json["images"][0]["height"], 100);
-        assert_eq!(
-            json["detections"][0]["category_id"],
-            0
-        );
+        assert_eq!(json["detections"][0]["category_id"], 0);
         assert_eq!(json["detections"][0]["score"], 1.0);
         Ok(())
     }
