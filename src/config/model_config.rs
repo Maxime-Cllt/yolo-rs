@@ -17,7 +17,7 @@ mod tests {
         let json_data = r#"
         {
             "path": "model.onnx",
-            "architecture": "YoloV8"
+            "architecture": 8
         }
         "#;
 

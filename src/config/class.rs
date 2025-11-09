@@ -37,13 +37,13 @@ mod tests {
         {
             "id": 2,
             "name": "example_class",
-            "color": "\#FF5733"
+            "color": "FF5733"
         }
         "#;
 
         let class: Class = serde_json::from_str(JSON_DATA).unwrap();
         assert_eq!(class.id, 2);
         assert_eq!(class.name, "example_class");
-        assert_eq!(class.color.unwrap(), "#FF5733");
+        assert_eq!(class.color.unwrap(), "FF5733");
     }
 }

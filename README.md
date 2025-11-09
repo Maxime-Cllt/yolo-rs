@@ -76,18 +76,22 @@ cargo build
 cargo build --release
 ```
 
----
-
 ## 🎮 Usage
 
-### Basic Usage
+### Run Inference
+
+#### Single Image
 
 ```bash
 # Run inference on an image
 cargo run --release -- path/to/image.png
+```
 
-# Or use the compiled binary
-./target/release/yolo-rs path/to/image.png
+#### Folder of Images
+
+```bash
+# Run inference on all images in a folder
+cargo run --release -- --folder path/to/image_folder/
 ```
 
 ### Configuration
@@ -174,12 +178,8 @@ cargo bench
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-6. 
+Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
+
 ---
 
 ## 📝 License

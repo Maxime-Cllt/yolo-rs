@@ -8,7 +8,7 @@ mod benches;
 
 fn main() {
     // Determine the image path based on the build configuration
-    let mode = parse_args();
+    let mode = parse_args(std::env::args().collect::<Vec<String>>().as_slice());
 
     // Use the embedded model bytes instead of a file path
     let mut yolo_model =
