@@ -3,6 +3,7 @@
     <p><em>A blazing-fast Rust runtime for YOLOv8 and YOLOv10 object detection using ONNX Runtime</em></p>
 </div>
 
+
 <div align="center">
   <img src="https://img.shields.io/badge/Rust-dea584?style=for-the-badge&logo=rust&logoColor=white" alt="Rust" />
   <img src="https://img.shields.io/badge/ONNX_Runtime-005CED?style=for-the-badge&logo=onnx&logoColor=white" alt="ONNX Runtime" />
@@ -11,6 +12,10 @@
 </div>
 
 <br/>
+
+<div align="center">
+    <img src="assets/example.png" width="500px" alt="YOLO-rs Example Output" />
+</div>
 
 ## 📖 Overview
 
